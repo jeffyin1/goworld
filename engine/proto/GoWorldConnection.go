@@ -10,7 +10,6 @@ import (
 	"github.com/xiaonanln/goworld/engine/consts"
 	"github.com/xiaonanln/goworld/engine/gwlog"
 	"github.com/xiaonanln/goworld/engine/netutil"
-	"github.com/xiaonanln/goworld/engine/netutil/compress"
 )
 
 // GoWorldConnection is the network protocol implementation of GoWorld components (dispatcher, gate, game)
@@ -21,14 +20,9 @@ type GoWorldConnection struct {
 }
 
 // NewGoWorldConnection creates a GoWorldConnection using network connection
-func NewGoWorldConnection(conn netutil.Connection, compressConnection bool, compressFormat string) *GoWorldConnection {
-	var compressor compress.Compressor
-	if compressConnection {
-		compressor = compress.NewCompressor(compressFormat)
-	}
-
+func NewGoWorldConnection(conn netutil.Connection) *GoWorldConnection {
 	return &GoWorldConnection{
-		packetConn: netutil.NewPacketConnection(conn, compressor),
+		packetConn: netutil.NewPacketConnection(conn),
 	}
 }
 
@@ -113,10 +107,10 @@ func (gwc *GoWorldConnection) SendLoadEntitySomewhere(typeName string, entityID 
 	return gwc.SendPacketRelease(packet)
 }
 
-// SendSrvdisRegister
-func (gwc *GoWorldConnection) SendSrvdisRegister(srvid string, info string, force bool) error {
+// SendKvregRegister
+func (gwc *GoWorldConnection) SendKvregRegister(srvid string, info string, force bool) error {
 	packet := gwc.packetConn.NewPacket()
-	packet.AppendUint16(MT_SRVDIS_REGISTER)
+	packet.AppendUint16(MT_KVREG_REGISTER)
 	packet.AppendVarStr(srvid)
 	packet.AppendVarStr(info)
 	packet.AppendBool(force)
@@ -401,7 +395,7 @@ func MakeNotifyDeploymentReadyPacket() *netutil.Packet {
 	return pkt
 }
 
-func (gwc *GoWorldConnection) SendSetGameIDAck(dispid uint16, isDeploymentReady bool, connectedGameIDs []uint16, rejectEntities []common.EntityID, srvdisRegisterMap map[string]string) error {
+func (gwc *GoWorldConnection) SendSetGameIDAck(dispid uint16, isDeploymentReady bool, connectedGameIDs []uint16, rejectEntities []common.EntityID, kvregRegisterMap map[string]string) error {
 	pkt := netutil.NewPacket()
 	pkt.AppendUint16(MT_SET_GAME_ID_ACK)
 	pkt.AppendUint16(dispid)
@@ -418,7 +412,7 @@ func (gwc *GoWorldConnection) SendSetGameIDAck(dispid uint16, isDeploymentReady 
 		pkt.AppendEntityID(eid)
 	}
 	// put all services to the packet
-	pkt.AppendMapStringString(srvdisRegisterMap)
+	pkt.AppendMapStringString(kvregRegisterMap)
 	return gwc.SendPacketRelease(pkt)
 }
 
