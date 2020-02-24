@@ -37,6 +37,7 @@ func (a *Player) setDefaultAttrs() {
 	a.Attrs.SetDefaultInt("hp", 100)
 	a.Attrs.SetDefaultInt("hpmax", 100)
 	a.Attrs.SetDefaultStr("action", "idle")
+	a.Attrs.SetDefaultInt("attack", 30)
 
 	a.SetClientSyncing(true)
 }
@@ -59,7 +60,7 @@ func (p *Player) enterSpace(spaceKind int) {
 // OnClientConnected is called when client is connected
 func (a *Player) OnClientConnected() {
 	gwlog.Infof("%s client connected", a)
-	a.enterSpace(int(a.GetInt("spaceKind")))
+	a.enterSpace(int(a.GetFloat("spaceKind")))
 }
 
 // OnClientDisconnected is called when client is lost
@@ -119,13 +120,43 @@ func (a *Player) ShootHit_Client(victimID common.EntityID) {
 	}
 
 	monster := victim.I.(*Monster)
-	monster.TakeDamage(50)
+	atk := a.Attrs.GetInt("attack")
+	suplusHp := monster.TakeDamage(atk)
+	if suplusHp <= 0 {
+		a.Attrs.SetInt("attack", atk+1)
+		a.Attrs.SetInt("hp", a.Attrs.GetInt("hp")+10)
+	}
+
 }
 
-func (player *Player) TakeDamage(damage int64) {
+func (a *Player) ShootHitPlayer_Client(victimID common.EntityID) {
+	a.CallAllClients("Shoot")
+	victim := a.Space.GetEntity(victimID)
+	if victim == nil {
+		gwlog.Warnf("Shoot %s, but player not found", victimID)
+		return
+	}
+
+	if victim.Attrs.GetInt("hp") <= 0 {
+		return
+	}
+
+	player := victim.I.(*Player)
+	atk := a.Attrs.GetInt("attack")
+	if iskill := player.TakeDamage(atk); iskill {
+		a.Attrs.SetInt("attack", atk+3)
+		a.Attrs.SetInt("hp", a.Attrs.GetInt("hp")+30)
+	}
+}
+
+func (a *Player) Rebirth_Client(victimID common.EntityID) {
+	a.Rebirth()
+}
+
+func (player *Player) TakeDamage(damage int64) bool {
 	hp := player.GetInt("hp")
 	if hp <= 0 {
-		return
+		return false
 	}
 
 	hp = hp - damage
@@ -138,6 +169,22 @@ func (player *Player) TakeDamage(damage int64) {
 	if hp <= 0 {
 		// now player dead ...
 		player.Attrs.SetStr("action", "death")
-		player.SetClientSyncing(false)
+		//player.SetClientSyncing(false)
+		return true
 	}
+	return false
+}
+
+func (player *Player) Rebirth() {
+	hp := player.GetInt("hp")
+	if hp > 0 {
+		return
+	}
+
+	hp = 100
+
+	player.Attrs.SetInt("hp", hp)
+	player.Attrs.SetInt("attack", 20)
+	player.Attrs.SetStr("action", "idle")
+
 }
