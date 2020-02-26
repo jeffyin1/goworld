@@ -1,12 +1,13 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/xiaonanln/goworld"
 	"github.com/xiaonanln/goworld/engine/common"
 	"github.com/xiaonanln/goworld/engine/consts"
 	"github.com/xiaonanln/goworld/engine/entity"
 	"github.com/xiaonanln/goworld/engine/gwlog"
-	"strconv"
 )
 
 // Player 对象代表一名玩家
@@ -60,7 +61,7 @@ func (p *Player) enterSpace(spaceKind int) {
 // OnClientConnected is called when client is connected
 func (a *Player) OnClientConnected() {
 	gwlog.Infof("%s client connected", a)
-	a.enterSpace(int(a.GetInt("spaceKind")))
+	a.enterSpace(int(a.GetFloat("spaceKind")))
 }
 
 // OnClientDisconnected is called when client is lost
