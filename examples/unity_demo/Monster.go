@@ -40,6 +40,7 @@ func (monster *Monster) setDefaultAttrs() {
 	monster.Attrs.SetDefaultInt("hpmax", 100)
 	monster.Attrs.SetDefaultInt("hp", 100)
 	monster.Attrs.SetDefaultStr("action", "idle")
+	monster.Attrs.SetDefaultInt("attack", 10)
 
 	monster.attackCD = time.Second
 	monster.lastAttackTime = time.Now()
@@ -73,6 +74,7 @@ func (monster *Monster) AI() {
 	} else {
 		monster.Attacking(nearestPlayer)
 	}
+
 }
 
 func (monster *Monster) Tick() {
@@ -152,7 +154,7 @@ func (monster *Monster) GetDamage() int64 {
 	return 10
 }
 
-func (monster *Monster) TakeDamage(damage int64) {
+func (monster *Monster) TakeDamage(damage int64) int64 {
 	hp := monster.GetInt("hp")
 	hp = hp - damage
 	if hp < 0 {
@@ -165,4 +167,5 @@ func (monster *Monster) TakeDamage(damage int64) {
 		monster.Attrs.SetStr("action", "death")
 		monster.Destroy()
 	}
+	return hp
 }
